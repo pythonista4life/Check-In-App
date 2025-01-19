@@ -1,0 +1,6 @@
+__pycache__
+.vscode
+flask/
+secrets.env
+*pyc 
+.DS_Store
