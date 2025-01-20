@@ -10,6 +10,7 @@ check_in_questions = {
 
 custom_check_in_questions={}
 
+# This function sets up and initializes the database for a Flask application.
 def init_db(app):
     db.init_app(app)
     with app.app_context():

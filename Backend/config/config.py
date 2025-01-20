@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv("secrets.env")
 
+# This function provides a dictionary of app configuration settings.
 def get_config():
     return {
         "API_TITLE": "Stores REST API",

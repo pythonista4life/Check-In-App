@@ -4,7 +4,7 @@ from flask import jsonify
 # Initialize JWT manager
 jwt = JWTManager()
 
-# Set up an in-memory blacklist (you can replace this with a more persistent solution like Redis)
+# Set up an in-memory blacklist to store jwt tokens.
 BLACKLISTED_TOKENS = set()
 
 def init_jwt(app):
@@ -28,8 +28,12 @@ def init_jwt(app):
     # Check if a token is in the blacklist
     @jwt.token_in_blocklist_loader
     def check_if_token_in_blacklist(jwt_header, jwt_payload):
-        jti = jwt_payload["jti"]  # Get the token's unique identifier (JTI)
-        return jti in BLACKLISTED_TOKENS  # If it's in the blacklist, return True
+
+        # Get the token's unique identifier (JTI).
+        jti = jwt_payload["jti"]  
+
+        # If it's in the blacklist, return True.
+        return jti in BLACKLISTED_TOKENS  
     
     # If a token is blacklisted return an error.
     @jwt.revoked_token_loader

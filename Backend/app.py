@@ -12,9 +12,11 @@ from resources.friendships import blp as FriendshipsBlueprint
 
 load_dotenv("secrets.env")
 
+
+# Creates our app with specified configurations, extensions, blueprints
 def create_app(db_url=None):
     app = Flask(__name__)
-    
+
     # Load app configurations
     app.config.from_mapping(get_config())
 
@@ -23,10 +25,10 @@ def create_app(db_url=None):
     init_jwt(app)
     init_mail(app)
 
-    api = Api(app)
     limiter.init_app(app)
 
     # Register blueprints
+    api = Api(app)
     api.register_blueprint(QuestionsBlueprint)
     api.register_blueprint(UsersBlueprint)
     api.register_blueprint(FriendshipsBlueprint)

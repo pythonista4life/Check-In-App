@@ -1,8 +1,12 @@
 from extensions.db import db
 
+
 class UserModel(db.Model):
+
+    # The name of the database table.
     __tablename__ = "users"
-    
+
+    # Database columns.
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(120), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -15,15 +19,15 @@ class UserModel(db.Model):
         "FriendshipModel",
         foreign_keys="[FriendshipModel.user_id]",
         back_populates="user",
-        cascade="all, delete-orphan",  # Automatically delete friendships when the user is deleted
-        lazy="dynamic"
+        cascade="all, delete-orphan",
+        lazy="dynamic",
     )
     friend_of = db.relationship(
         "FriendshipModel",
         foreign_keys="[FriendshipModel.friend_id]",
         back_populates="friend",
         cascade="all, delete-orphan",
-        lazy="dynamic"
+        lazy="dynamic",
     )
 
 
@@ -32,21 +36,27 @@ class FriendshipModel(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(
-        db.Integer, 
-        db.ForeignKey("users.id", ondelete="CASCADE"), 
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
-        index=True  # Add an index for better query performance
+        index=True,  # Add an index for better query performance
     )
     friend_id = db.Column(
-        db.Integer, 
-        db.ForeignKey("users.id", ondelete="CASCADE"), 
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
-        index=True
+        index=True,
     )
     status = db.Column(db.String(20), nullable=False, default="pending")
     created_at = db.Column(db.DateTime, server_default=db.func.now())
-    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
+    updated_at = db.Column(
+        db.DateTime, server_default=db.func.now(), onupdate=db.func.now()
+    )
 
     # Relationships
-    user = db.relationship("UserModel", foreign_keys=[user_id], back_populates="friends")
-    friend = db.relationship("UserModel", foreign_keys=[friend_id], back_populates="friend_of")
+    user = db.relationship(
+        "UserModel", foreign_keys=[user_id], back_populates="friends"
+    )
+    friend = db.relationship(
+        "UserModel", foreign_keys=[friend_id], back_populates="friend_of"
+    )

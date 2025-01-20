@@ -1,11 +1,21 @@
 from flask.views import MethodView
 from flask_smorest import Blueprint
 from extensions.db import check_in_questions, custom_check_in_questions
-from schemas.schemas import QuestionResponseSchema, CustomQuestionSchema, CustomQuestionResponseSchema, DeleteCustomQuestionResponseSchema
+from schemas.schemas import (
+    QuestionResponseSchema,
+    CustomQuestionSchema,
+    CustomQuestionResponseSchema,
+    DeleteCustomQuestionResponseSchema,
+)
 
-blp = Blueprint("check_in_questions", __name__, description="Operations on check in shortcut questions.")
+blp = Blueprint(
+    "check_in_questions",
+    __name__,
+    description="Operations on check in shortcut questions.",
+)
 
 
+# Get all general check-in questions.
 @blp.route("/check-in-questions")
 class Questions(MethodView):
 
@@ -19,6 +29,8 @@ class Questions(MethodView):
             return []
         return questions
 
+
+# Get, post, and delete custom(created by the user) check-in questions.
 @blp.route("/custom-check-in_questions/<string:user_id>")
 class CustomQuestions(MethodView):
 
@@ -36,8 +48,8 @@ class CustomQuestions(MethodView):
 
         # Return the list of questions for the specified user
         return user_questions  # Flask-Smorest will handle the serialization
-    
-    @blp.arguments(CustomQuestionSchema, location="json") 
+
+    @blp.arguments(CustomQuestionSchema, location="json")
     @blp.response(201, CustomQuestionResponseSchema)
     def post(self, question_data, user_id):
         """
@@ -49,7 +61,7 @@ class CustomQuestions(MethodView):
 
         # Generate a unique ID for the new question
         new_question = {
-            "id": str(len(custom_check_in_questions[user_id]) + 1),  # Unique within this user's questions
+            "id": str(len(custom_check_in_questions[user_id]) + 1),
             "user_id": user_id,
             **question_data,
         }
@@ -68,7 +80,9 @@ class CustomQuestions(MethodView):
 
         if user_questions:
             custom_check_in_questions[user_id] = []
-            return {"questions": [], "message": f"All questions have been deleted for user ID {user_id}"}
+            return {
+                "questions": [],
+                "message": f"All questions have been deleted for user ID {user_id}",
+            }
 
         return {"questions": [], "message": "No questions found for the user"}, 404
-    

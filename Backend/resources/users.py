@@ -11,7 +11,16 @@ from datetime import datetime, timedelta
 from flask_jwt_extended import create_access_token
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import UserModel
-from schemas.schemas import RegisterResponseSchema, RegisterArgsSchema, LoginArgsSchema, LoginResponseSchema, UserSchema, PasswordResetRequestSchema, ResetCodeRequestSchema, PasswordResetResponseSchema
+from schemas.schemas import (
+    RegisterResponseSchema,
+    RegisterArgsSchema,
+    LoginArgsSchema,
+    LoginResponseSchema,
+    UserSchema,
+    PasswordResetRequestSchema,
+    ResetCodeRequestSchema,
+    PasswordResetResponseSchema,
+)
 from extensions.db import db
 
 from flask_mail import Mail, Message
@@ -21,8 +30,10 @@ mail = Mail()
 blp = Blueprint("users", __name__, description="Operations on users.")
 
 
+# Register a user.
 @blp.route("/register")
 class Register(MethodView):
+
     @blp.arguments(RegisterArgsSchema)
     @blp.response(201, RegisterResponseSchema)
     def post(self, user_data):
@@ -43,7 +54,7 @@ class Register(MethodView):
         new_user = UserModel(
             email=user_data["email"],
             username=user_data["username"],
-            password=hashed_password
+            password=hashed_password,
         )
         db.session.add(new_user)
         db.session.commit()
@@ -52,8 +63,11 @@ class Register(MethodView):
             "message": f"Account for {new_user.username} has been created successfully."
         }
 
+
+# Login a user.
 @blp.route("/login")
 class Login(MethodView):
+
     @blp.arguments(LoginArgsSchema)  # Validate login arguments
     @blp.response(200, LoginResponseSchema)  # Return response with success message
     def post(self, login_data):
@@ -62,7 +76,6 @@ class Login(MethodView):
         """
         # Retrieve user from the database using the provided email
         user = UserModel.query.filter_by(email=login_data["email"]).first()
-        
 
         if not user:
             abort(400, message="Invalid email.")
@@ -75,38 +88,56 @@ class Login(MethodView):
         access_token = create_access_token(identity=str(user.id))
 
         # Return JWT Token and a success message if login is successful
-        return {"access_token":access_token,"message": f"Successfully logged in as {user.username}."}
+        return {
+            "access_token": access_token,
+            "message": f"Successfully logged in as {user.username}.",
+        }
 
+
+# Get or delete a user.
 @blp.route("/user/<int:user_id>")
 class User(MethodView):
-    """
-    Get or delete a user.
-    """
+
     @blp.response(200, UserSchema)
     def get(self, user_id):
+        """
+        Get a user.
+        """
         user = UserModel.query.get_or_404(user_id)
         return user
 
     def delete(self, user_id):
+        """
+        Delete a user.
+        """
         user = UserModel.query.get_or_404(user_id)
         db.session.delete(user)
         db.session.commit()
         return jsonify({"message": "User deleted successfully."}), 200
 
+
+# Send Email Function
 def send_email(recipient, body):
     msg = Message(
-        "Password Reset Code", 
+        "Password Reset Code",
         sender=os.getenv("SECRET_KEY"),
-        recipients=[recipient], 
-        body=body)
+        recipients=[recipient],
+        body=body,
+    )
     mail.send(msg)
 
+
+# Reset password request.
 @blp.route("/reset-password/request")
 class RequestPasswordReset(MethodView):
+
     @limiter.limit("3 per minute")
     @blp.arguments(PasswordResetRequestSchema)
     @blp.response(200, PasswordResetResponseSchema)
     def post(self, data):
+        """
+        Send a request to reset your password by a 4 digit code sent to your email.
+        """
         user = UserModel.query.filter_by(email=data["email"]).first()
 
         if not user:
@@ -122,11 +153,17 @@ class RequestPasswordReset(MethodView):
         # Send reset code via email
         send_email(user.email, f"Your reset code is: {reset_code}")
         return {"message": "Password reset code sent to your email."}
-    
+
+
+# Reset password.
 @blp.route("/reset-password/reset")
 class ResetPassword(MethodView):
+
     @blp.arguments(ResetCodeRequestSchema)
     def post(self, data):
+        """
+        Hash and update a new password.
+        """
         user = UserModel.query.filter_by(email=data["email"]).first()
 
         if not user or user.reset_code != data["reset_code"]:
@@ -137,21 +174,23 @@ class ResetPassword(MethodView):
 
         # Hash the new password and update it
         user.password = generate_password_hash(data["new_password"])
-        user.reset_code = None  # Clear reset code
+        user.reset_code = None
         user.reset_code_expiry = None
         db.session.commit()
 
         return jsonify({"message": "Password has been reset successfully."}), 200
 
+
+# Logout a user.
 @blp.route("/logout")
 class Logout(MethodView):
+
     @jwt_required()
     def post(self):
         """
         Log out a user by blacklisting their token.
         """
-        # Get the token's unique identifier (JTI)
         jti = get_jwt()["jti"]
-        BLACKLISTED_TOKENS.add(jti)  # Add the token to the blacklist
+        BLACKLISTED_TOKENS.add(jti)
 
         return jsonify({"message": "Successfully logged out."}), 200
