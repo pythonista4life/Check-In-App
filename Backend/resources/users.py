@@ -8,7 +8,11 @@ from extensions.jwt_config import BLACKLISTED_TOKENS
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
 from datetime import datetime, timedelta
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import (
+    create_access_token,
+    create_refresh_token,
+    get_jwt_identity,
+)
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import UserModel
 from schemas.schemas import (
@@ -85,13 +89,29 @@ class Login(MethodView):
             abort(400, message="Invalid password.")
 
         # Create access token if login is successful
-        access_token = create_access_token(identity=str(user.id))
+        access_token = create_access_token(identity=str(user.id), fresh=True)
+
+        # Create Refresh Token
+        refresh_token = create_refresh_token(identity=str(user.id))
 
         # Return JWT Token and a success message if login is successful
         return {
             "access_token": access_token,
+            "refresh_token": refresh_token,
             "message": f"Successfully logged in as {user.username}.",
         }
+
+
+@blp.route("/refresh")
+class TokenRefresh(MethodView):
+    @jwt_required(refresh=True)
+    def post(self):
+        current_user = get_jwt_identity()
+        new_token = create_access_token(identity=current_user, fresh=False)
+        # If you blacklist the refresh token you will need to login once again.
+        # jti = get_jwt()["jti"]
+        # BLACKLISTED_TOKENS.add(jti)
+        return {"access_token": new_token}, 200
 
 
 # Get or delete a user.
