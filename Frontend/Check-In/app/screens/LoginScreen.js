@@ -1,14 +1,19 @@
-import { useState } from "react";
-import AppButton from "../components/AppButton";
-import AppLink from "../components/AppLink";
 import { colors } from "../config/AppColors";
-import AppTextInput from "../components/AppTextInput";
 import { StyleSheet, Image, View } from "react-native";
+import { Formik } from "formik";
+import * as Yup from "yup";
+import AppLink from "../components/AppLink";
+import AppButton from "../components/AppButton";
+import AppErrorMessage from "../components/AppErrorMessage";
+import AppTextInput from "../components/AppTextInput";
 import Screen from "../components/Screen";
 
+const ValidationSchema = Yup.object().shape({
+  email: Yup.string().required().email().label("Email"),
+  password: Yup.string().required().label("Password"),
+});
+
 export default function LoginScreen() {
-  const [email, setEmail] = useState();
-  const [password, setPassword] = useState();
   return (
     <Screen style={styles.container}>
       <Image
@@ -16,32 +21,49 @@ export default function LoginScreen() {
         source={require("../assets/Placeholder.png")}
         resizeMode="contain"
       />
-      <AppTextInput
-        autoCapitalize="none"
-        autoCorrect={false}
-        icon={"email"}
-        keyboardType="email-address"
-        onChangeText={(text) => setEmail(text)}
-        placeholder={"Input Email"}
-        textContentType="emailAddress"
-      />
-      <AppTextInput
-        icon={"lock"}
-        onChangeText={(text) => setPassword(text)}
-        pass
-        placeholder={"Input Password"}
-        textContentType="password"
-      />
-      <AppLink onPress={() => console.log("Link Pressed")}>
-        Forgot username or password?
-      </AppLink>
-      <View style={styles.buttonContainer}>
-        <AppButton
-          color={colors.blue}
-          title="Login"
-          onPress={() => console.log(email, password)}
-        />
-      </View>
+      <Formik
+        initialValues={{ email: "", password: "" }}
+        onSubmit={(values) => console.log(values)}
+        validationSchema={ValidationSchema}
+      >
+        {({ handleChange, handleSubmit, errors, setFieldTouched, touched }) => (
+          <>
+            <AppTextInput
+              autoCapitalize="none"
+              autoCorrect={false}
+              icon={"email"}
+              keyboardType="email-address"
+              onBlur={() => setFieldTouched("email")}
+              onChangeText={handleChange("email")}
+              placeholder={"Input Email"}
+              textContentType="emailAddress"
+            />
+            <AppErrorMessage error={errors.email} visible={touched.email} />
+            <AppTextInput
+              icon={"lock"}
+              onBlur={() => setFieldTouched("password")}
+              onChangeText={handleChange("password")}
+              pass
+              placeholder={"Input Password"}
+              textContentType="password"
+            />
+            <AppErrorMessage
+              error={errors.password}
+              visible={touched.password}
+            />
+            <AppLink onPress={() => console.log("Link Pressed")}>
+              Forgot username or password?
+            </AppLink>
+            <View style={styles.buttonContainer}>
+              <AppButton
+                color={colors.blue}
+                title="Login"
+                onPress={handleSubmit}
+              />
+            </View>
+          </>
+        )}
+      </Formik>
     </Screen>
   );
 }
@@ -61,6 +83,6 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     flex: 1,
-    justifyContent: "flex-end", // Pushes the button to the bottom
+    justifyContent: "flex-end",
   },
 });
